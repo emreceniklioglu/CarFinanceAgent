@@ -144,7 +144,6 @@ def show_workflow() -> str:
 
 with gr.Blocks(title=GRADIO_TITLE) as demo:
     gr.Markdown(f"# {GRADIO_TITLE}")
-    gr.Markdown("> Agentic AI öğrenme demosu — LangGraph + LiteLLM + ChromaDB/Jina RAG")
 
     # Oturum state'i (tarayıcıda saklanır)
     session_state = gr.State(value=str(uuid.uuid4()))

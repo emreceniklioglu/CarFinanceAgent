@@ -13,7 +13,7 @@ load_dotenv()
 # ── LLM Model Seçimi ─────────────────────────────────────────────────────────
 # Büyük model: FAQ cevaplama, çok adımlı muhakeme
 # Küçük model: Intent sınıflandırma, slot çıkarımı, kısa onaylar
-ACTIVE_MODEL: str = os.getenv("ACTIVE_MODEL", "gemini/gemini-2.5-flash")
+ACTIVE_MODEL: str = os.getenv("ACTIVE_MODEL", "gemini/gemini-2.5-flash-lite")
 ROUTER_MODEL: str = os.getenv("ROUTER_MODEL", "gemini/gemini-2.5-flash-lite")
 
 # ── API Key'ler ───────────────────────────────────────────────────────────────
