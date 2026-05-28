@@ -191,6 +191,7 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
         chatbot_ui = gr.Chatbot(
             label="Arac Finansmani Chatbot",
             height=500,
+            type="messages",
         )
 
         with gr.Row():
