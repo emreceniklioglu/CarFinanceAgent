@@ -13,8 +13,8 @@ load_dotenv()
 # ── LLM Model Seçimi ─────────────────────────────────────────────────────────
 # Büyük model: FAQ cevaplama, çok adımlı muhakeme
 # Küçük model: Intent sınıflandırma, slot çıkarımı, kısa onaylar
-ACTIVE_MODEL: str = os.getenv("ACTIVE_MODEL", "gpt-4o")
-ROUTER_MODEL: str = os.getenv("ROUTER_MODEL", "gpt-4o-mini")
+ACTIVE_MODEL: str = os.getenv("ACTIVE_MODEL", "gemini/gemini-2.5-flash")
+ROUTER_MODEL: str = os.getenv("ROUTER_MODEL", "gemini/gemini-2.5-flash-lite")
 
 # ── API Key'ler ───────────────────────────────────────────────────────────────
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
