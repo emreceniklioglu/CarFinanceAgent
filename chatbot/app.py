@@ -132,12 +132,16 @@ def new_session() -> tuple[str, list]:
     return session_id, [(None, welcome)]
 
 
-def show_workflow() -> str:
-    """Workflow Mermaid diyagramını döndürür."""
+def show_workflow():
+    """Workflow diyagramını PNG görsel olarak döndürür; başarısızsa mermaid kodu."""
+    import io
+    from PIL import Image
     try:
-        return f"```mermaid\n{get_workflow_mermaid()}\n```"
+        png_bytes = get_compiled_graph().get_graph().draw_mermaid_png()
+        return Image.open(io.BytesIO(png_bytes)), ""
     except Exception as e:
-        return f"Diyagram üretilirken hata: {e}"
+        # mermaid.ink API erişilemezse ham kodu göster
+        return None, f"```mermaid\n{get_workflow_mermaid()}\n```\n\n*(Görsel üretilemedi: {e})*"
 
 
 # ── Gradio UI ─────────────────────────────────────────────────────────────────
@@ -210,9 +214,10 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
 
     with gr.Tab("🗺️ Workflow Diyagramı"):
         gr.Markdown("LangGraph state machine görselleştirmesi:")
-        diagram_output = gr.Markdown()
+        diagram_image = gr.Image(label="Workflow", show_label=False)
+        diagram_fallback = gr.Markdown()
         show_btn = gr.Button("Diyagramı Göster")
-        show_btn.click(fn=show_workflow, outputs=diagram_output)
+        show_btn.click(fn=show_workflow, outputs=[diagram_image, diagram_fallback])
 
     # Audit/Metrik Dashboard sekmesi
     build_dashboard_tab()
