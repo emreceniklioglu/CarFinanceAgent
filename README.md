@@ -6,6 +6,7 @@ colorTo: indigo
 sdk: gradio
 sdk_version: 4.44.0
 app_file: chatbot/app.py
+python_version: "3.11"
 pinned: false
 ---
 
