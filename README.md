@@ -4,7 +4,7 @@ emoji: 🚗
 colorFrom: blue
 colorTo: indigo
 sdk: gradio
-sdk_version: 5.3.0
+sdk_version: 5.10.0
 app_file: chatbot/app.py
 python_version: "3.11"
 pinned: false
