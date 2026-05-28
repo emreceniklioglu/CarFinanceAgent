@@ -19,6 +19,20 @@ sys.path.insert(0, os.path.dirname(__file__))
 if hasattr(sys.stdout, 'buffer'):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
+# huggingface_hub 0.27+ HfFolder'ı kaldırdı; eski gradio sürümleri bunu import eder.
+try:
+    from huggingface_hub import HfFolder  # noqa: F401
+except ImportError:
+    import huggingface_hub as _hf_hub
+    class _HfFolder:
+        @staticmethod
+        def get_token(): return None
+        @staticmethod
+        def save_token(token): pass
+        @staticmethod
+        def delete_token(): pass
+    _hf_hub.HfFolder = _HfFolder
+
 import gradio as gr
 from langchain_core.messages import HumanMessage
 
