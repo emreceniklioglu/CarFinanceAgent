@@ -75,7 +75,7 @@ except Exception as e:
 _sessions: dict = {}
 
 
-def chat(message: str, history: list, session_id: str, model_choice: str) -> str:
+def chat(message: str, history: list, session_id: str) -> str:
     """
     Gradio ChatInterface'in çağırdığı ana fonksiyon.
 
@@ -83,14 +83,10 @@ def chat(message: str, history: list, session_id: str, model_choice: str) -> str
         message: Kullanıcının yazdığı metin
         history: Önceki mesajlar (Gradio formatı)
         session_id: Oturum UUID (Gradio state'te saklanır)
-        model_choice: Kullanıcının seçtiği model
 
     Returns:
         Chatbot'un cevabı (string)
     """
-    # Model seçimini config'e yansıt (runtime değişiklik)
-    _apply_model_choice(model_choice)
-
     compiled = get_compiled_graph()
     config = get_thread_config(session_id)
 
@@ -144,45 +140,7 @@ def show_workflow() -> str:
         return f"Diyagram üretilirken hata: {e}"
 
 
-def _apply_model_choice(choice: str):
-    """
-    Model seçimini runtime'da config modülüne uygular.
-    llm/factory.py config.ACTIVE_MODEL'i her çağrıda taze okuduğu için
-    bu değişiklik anında tüm agent'lara yansır — oturum sıfırlanmaz.
-    """
-    import config as cfg
-    model_map = {
-        "GPT-4o":           ("gpt-4o",                        "gpt-4o-mini"),
-        "GPT-4o Mini":      ("gpt-4o-mini",                   "gpt-4o-mini"),
-        "Claude Sonnet":    ("claude-sonnet-4-6",              "claude-haiku-4-5-20251001"),
-        "Claude Haiku":     ("claude-haiku-4-5-20251001",      "claude-haiku-4-5-20251001"),
-        "Gemini Flash":     ("gemini/gemini-2.5-flash",      "gemini/gemini-2.5-flash-lite"),
-        "Gemini Flash Lite":("gemini/gemini-2.5-flash-lite", "gemini/gemini-2.5-flash-lite"),
-    }
-    if choice in model_map:
-        cfg.ACTIVE_MODEL, cfg.ROUTER_MODEL = model_map[choice]
-
-
 # ── Gradio UI ─────────────────────────────────────────────────────────────────
-
-MODEL_CHOICES = ["GPT-4o", "GPT-4o Mini", "Claude Sonnet", "Claude Haiku", "Gemini Flash", "Gemini Flash Lite"]
-
-# Config'deki aktif modele göre dropdown başlangıç değerini belirle
-_REVERSE_MODEL_MAP = {
-    "gpt-4o":                          "GPT-4o",
-    "gpt-4o-mini":                     "GPT-4o Mini",
-    "claude-sonnet-4-6":               "Claude Sonnet",
-    "claude-haiku-4-5-20251001":       "Claude Haiku",
-    "gemini/gemini-2.5-flash":         "Gemini Flash",
-    "gemini/gemini-2.5-flash-lite":    "Gemini Flash Lite",
-    "gemini/gemini-2.0-flash":         "Gemini Flash",
-    "gemini/gemini-flash-latest":      "Gemini Flash",
-    "gemini/gemini-2.0-flash-latest":  "Gemini Flash",
-    "gemini/gemini-2.0-flash-lite":    "Gemini Flash Lite",
-}
-
-import config as _init_cfg
-_DEFAULT_MODEL_CHOICE = _REVERSE_MODEL_MAP.get(_init_cfg.ACTIVE_MODEL, "GPT-4o")
 
 with gr.Blocks(title=GRADIO_TITLE) as demo:
     gr.Markdown(f"# {GRADIO_TITLE}")
@@ -193,18 +151,12 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
 
     with gr.Tab("💬 Chatbot"):
         with gr.Row():
-            model_dropdown = gr.Dropdown(
-                choices=MODEL_CHOICES,
-                value=_DEFAULT_MODEL_CHOICE,
-                label="🤖 Dil Modeli",
-                scale=2,
-            )
             import config as _cfg
             active_model_label = gr.Textbox(
                 value=f"{_cfg.ACTIVE_MODEL}  |  router: {_cfg.ROUTER_MODEL}",
                 label="Aktif Model",
                 interactive=False,
-                scale=3,
+                scale=4,
             )
             new_session_btn = gr.Button("🔄 Yeni Oturum", scale=1)
 
@@ -223,23 +175,11 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
             )
             send_btn = gr.Button("Gönder", scale=1, variant="primary")
 
-        # Model değişince etiketi güncelle (oturum SIFIRLANMAZ)
-        def on_model_change(choice):
-            _apply_model_choice(choice)
-            import config as cfg
-            return f"{cfg.ACTIVE_MODEL}  |  router: {cfg.ROUTER_MODEL}"
-
-        model_dropdown.change(
-            fn=on_model_change,
-            inputs=[model_dropdown],
-            outputs=[active_model_label],
-        )
-
         # Mesaj gönderme
-        def respond(message, history, session_id, model):
+        def respond(message, history, session_id):
             if not message.strip():
                 return history, ""
-            response = chat(message, history, session_id, model)
+            response = chat(message, history, session_id)
             history = history + [
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": response},
@@ -248,12 +188,12 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
 
         send_btn.click(
             fn=respond,
-            inputs=[msg_input, chatbot_ui, session_state, model_dropdown],
+            inputs=[msg_input, chatbot_ui, session_state],
             outputs=[chatbot_ui, msg_input],
         )
         msg_input.submit(
             fn=respond,
-            inputs=[msg_input, chatbot_ui, session_state, model_dropdown],
+            inputs=[msg_input, chatbot_ui, session_state],
             outputs=[chatbot_ui, msg_input],
         )
 
