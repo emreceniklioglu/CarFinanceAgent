@@ -9,7 +9,7 @@ app_file: chatbot/app.py
 python_version: "3.11"
 pinned: false
 ---
-Huggingface repo : https://huggingface.co/spaces/emrecn/CarFinanceAgent
+Huggingface space : https://huggingface.co/spaces/emrecn/CarFinanceAgent
 # Araç Finansmanı Chatbot — Agentic Demo
 
 Bankacılık mobil uygulaması için geliştirilmiş **LangGraph tabanlı çok-ajanlı (multi-agent)** araç finansmanı ön başvuru chatbotu. Müşteri, konuşma arayüzü üzerinden yeni veya ikinci el araç finansmanı ön başvurusunu tamamen otomatik olarak tamamlayabilir; süreç boyunca SSS sorabilir, verilerini düzeltebilir ve çapraz satış teklifini kabul edebilir.
