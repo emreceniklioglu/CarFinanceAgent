@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Ortam değişkenleri
+.env
+.env.*
+
+# Veritabanı
+*.db
+*.sqlite3
+
+# ChromaDB persist
+chatbot/data/chroma/
+
+# Log dosyaları
+*.log
+chatbot/app_out.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
