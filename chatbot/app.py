@@ -34,6 +34,17 @@ except ImportError:
     _hf_hub.HfFolder = _HfFolder
 
 import gradio as gr
+
+# gradio_client boolean JSON Schema değerlerini işleyemiyor (additionalProperties: true/false).
+# get_type(True) çağrısında "const" in True → TypeError. Yamayı uygula.
+import gradio_client.utils as _gcu
+_orig_get_type = _gcu.get_type
+def _safe_get_type(schema):
+    if not isinstance(schema, dict):
+        return "any"
+    return _orig_get_type(schema)
+_gcu.get_type = _safe_get_type
+
 from langchain_core.messages import HumanMessage
 
 from config import GRADIO_TITLE, GRADIO_SHARE
