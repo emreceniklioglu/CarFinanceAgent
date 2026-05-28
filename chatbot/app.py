@@ -36,14 +36,23 @@ except ImportError:
 import gradio as gr
 
 # gradio_client boolean JSON Schema değerlerini işleyemiyor (additionalProperties: true/false).
-# get_type(True) çağrısında "const" in True → TypeError. Yamayı uygula.
+# Hem get_type hem _json_schema_to_python_type boolean girdi aldığında çöküyor.
 import gradio_client.utils as _gcu
 _orig_get_type = _gcu.get_type
+_orig_schema_to_type = _gcu._json_schema_to_python_type
+
 def _safe_get_type(schema):
     if not isinstance(schema, dict):
         return "any"
     return _orig_get_type(schema)
+
+def _safe_schema_to_type(schema, defs=None):
+    if not isinstance(schema, dict):
+        return "any"
+    return _orig_schema_to_type(schema, defs)
+
 _gcu.get_type = _safe_get_type
+_gcu._json_schema_to_python_type = _safe_schema_to_type
 
 from langchain_core.messages import HumanMessage
 
