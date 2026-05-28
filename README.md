@@ -1,3 +1,14 @@
+---
+title: CarFinanceAgent
+emoji: 🚗
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: 4.44.0
+app_file: chatbot/app.py
+pinned: false
+---
+
 # Araç Finansmanı Chatbot — Agentic Demo
 
 Bankacılık mobil uygulaması için geliştirilmiş **LangGraph tabanlı çok-ajanlı (multi-agent)** araç finansmanı ön başvuru chatbotu. Müşteri, konuşma arayüzü üzerinden yeni veya ikinci el araç finansmanı ön başvurusunu tamamen otomatik olarak tamamlayabilir; süreç boyunca SSS sorabilir, verilerini düzeltebilir ve çapraz satış teklifini kabul edebilir.
