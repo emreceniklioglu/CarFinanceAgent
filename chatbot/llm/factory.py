@@ -86,23 +86,6 @@ class LiteLLMWrapper:
                     time.sleep(_BASE_DELAY * (2 ** attempt))  # 1s, 2s, 4s
         raise last_error
 
-    def bind_tools(self, tools):
-        """Tool binding destegi (validation_agent icin)."""
-        return BoundLLM(self, tools)
-
-
-class BoundLLM:
-    """bind_tools() sonrasi tool-calling destekli wrapper."""
-
-    def __init__(self, llm: LiteLLMWrapper, tools: list):
-        self.llm = llm
-        self.model = llm.model
-        self.tools = tools
-
-    def invoke(self, messages: list) -> LLMResponse:
-        # Basit fallback: tool'lar olmadan normal invoke
-        return self.llm.invoke(messages)
-
 
 def _format_messages(messages: list) -> list[dict]:
     """LangChain mesaj nesnelerini ya da dict'leri litellm formatina donustur."""

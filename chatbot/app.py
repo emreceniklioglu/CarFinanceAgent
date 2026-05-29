@@ -104,7 +104,7 @@ def chat(message: str, history: list, session_id: str) -> str:
     print(f"[DEBUG chat] sid={session_id[:8]} msg={message!r} awaited={state.get('awaited_slot')} vtype={state.get('vehicle_type')} step={state.get('current_step')}", flush=True)
     sys.stdout.flush()
 
-    # Graph'ı çalıştır
+    # Graph'ı çalıştır (sistem END node'una ulaşıncaya kadar VEYA bir "bekleme (interrupt/wait)" durumuna girene kadar olan TÜM döngüyü ifade eder)
     try:
         result = compiled.invoke(state, config=config)
         _sessions[session_id] = result

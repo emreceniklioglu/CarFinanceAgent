@@ -104,7 +104,7 @@ Müşteri Mesajı
 [Validation Agent]  ← TCKN, katalog, iş kuralı kontrolleri
        │
        ▼
-  [Output Guard]  ← PII redaction, finansal taahhüt filtresi
+  [Output Guard]  ← PII redaction, finansal taahhüt filtresi (şu an yalnızca FAQ cevaplarında)
        │
        ▼
   Müşteri Cevabı
@@ -135,6 +135,7 @@ Onay ekranında müşteri alan değiştirmek istediğinde:
 | **Intake Agent (Yeni Araç)** | Fatura, model, finansman, kefil TCKN toplanması; araç kataloğu sorgusu (binek/ticari doğrulama) | Slot Filling + Tool Use |
 | **Intake Agent (2. El)** | Kasko, yaş, finansman, satıcı TCKN toplanması | Slot Filling + Tool Use |
 | **Validation Agent** | Finansman limit kontrolü, iş kuralı kontrolleri | Tool Use (deterministik) |
+| **Reflection Agent** | Onay öncesi self-check: eksik slot + çapraz kural kontrolü | Reflection (deterministik) |
 | **FAQ/RAG Agent** | SSS sorularını vektör DB'den yanıtlama | RAG + Tool Use |
 | **Submission Agent** | Onaylanan başvuruyu SQLite'a kaydetme | Tool Use + Write |
 | **Cross-sell Agent** | HGS durumu sorgulama ve kayıt | Tool Use (Scoped Access) |
@@ -149,12 +150,14 @@ Her agent **least-privilege** prensibine göre çalışır: yalnızca ihtiyaç d
 |---|---|---|
 | `validate_tckn` / `_mask` | `tools/tckn_tool.py` | Mod-11 doğrulama fonksiyonu (hazır, şu an çağrılmıyor) + TCKN maskeleme (`_mask` her yerde aktif) |
 | `lookup_vehicle` | `tools/catalog_tool.py` | Marka/model → binek/ticari sınıflandırması (JSON katalog) |
+| `validate_new_car_amount` / `validate_used_car_amount` | `tools/amount_tool.py` | Finansman tutarı iş kuralı doğrulaması (limit, oran, kefil eşiği) |
+| `calculate_max_finance_new` / `calculate_max_finance_used` | `tools/amount_tool.py` | Maksimum finansman tutarı hesaplama |
 | `retrieve_faq` | `tools/rag_tool.py` | ChromaDB'den semantic arama, chunk döndürme |
 | `write_application` | `tools/db_tool.py` | Ön başvuruyu SQLite'a kayıt |
 | `check_hgs_status` | `tools/hgs_tool.py` | Müşterinin aktif HGS'i var mı? (mock) |
 | `register_hgs` | `tools/hgs_tool.py` | HGS başvurusu kayıt (mock) |
 
-Tüm tool'lar `@tool` decorator ile LangChain'e kayıtlıdır. LLM hangi tool'u çağıracağına karar verir; iş mantığı tool içinde deterministik çalışır.
+Tüm tool'lar `@tool` decorator ile tanımlıdır; ancak hangi tool'un ne zaman çağrılacağına **agent kodu deterministik olarak karar verir** — LLM tool seçmez, `bind_tools` kullanılmaz. LLM yalnızca intent sınıflandırma, slot çıkarımı ve FAQ cevaplama için kullanılır; iş mantığı tool içinde deterministik çalışır.
 
 ---
 
@@ -166,7 +169,7 @@ Bu projede uygulanan güvenlik katmanları:
 |---|---|---|
 | **L4** | Input Guard (`guardrails/input_guard.py`) | PII maskeleme (TCKN, IBAN, kart), prompt injection tespiti, uzunluk limiti |
 | **L5** | Orchestrator | Least-privilege tool erişimi, deterministik kural motoru |
-| **L7** | Output Guard (`guardrails/output_guard.py`) | PII redaction, finansal taahhüt filtresi, FAQ kaynak zorunluluğu |
+| **L7** | Output Guard (`guardrails/output_guard.py`) | PII redaction, finansal taahhüt filtresi, FAQ kaynak zorunluluğu — *şu an yalnızca FAQ agent çıktısında çağrılıyor* |
 
 > L1 (TLS), L2 (IDP), L3 (API Gateway/WAF) bu projenin kapsam dışındaki altyapı gereksinimleridir.
 
@@ -181,7 +184,8 @@ Tüm guard ve tool olayları **SQLite Audit Log**'a yazılır (`audit_events` ta
 | Teknoloji | Kullanım Amacı |
 |---|---|
 | **LangGraph** | Multi-agent state machine, checkpointing, graph orchestration |
-| **LangChain** | Tool dekoratörü, LLM soyutlama katmanı, mesaj formatları |
+| **LangChain** | Tool dekoratörü (`@tool`), mesaj formatları (Human/AI Message) |
+| **LiteLLM** | LLM soyutlama katmanı — GPT/Claude/Gemini'yi tek arayüzle çağırır (`llm/factory.py`) |
 | **Gradio** | Chatbot web arayüzü |
 | **OpenTelemetry** | Tracing altyapısı kurulu (`observability/tracer.py`), şu an ConsoleSpanExporter ile terminale yazıyor; Jaeger/Grafana bağlantısı yok |
 
@@ -189,10 +193,9 @@ Tüm guard ve tool olayları **SQLite Audit Log**'a yazılır (`audit_events` ta
 
 | Teknoloji | Kullanım Amacı |
 |---|---|
-| **GPT-4o** (`ACTIVE_MODEL`) | Ana model — FAQ cevaplama, çok adımlı muhakeme |
-| **GPT-4o-mini** (`ROUTER_MODEL`) | Hızlı model — niyet sınıflandırma, slot çıkarımı |
-| **Claude (Anthropic)** | Opsiyonel alternatif model |
-| **Gemini (Google)** | Opsiyonel alternatif model |
+| **Gemini 2.5 Flash-Lite** (`ACTIVE_MODEL` + `ROUTER_MODEL`) | Varsayılan model — hem muhakeme/FAQ hem niyet sınıflandırma & slot çıkarımı için kullanılır |
+| **GPT-4o / GPT-4o-mini (OpenAI)** | Opsiyonel alternatif (`.env` ile seçilir) |
+| **Claude (Anthropic)** | Opsiyonel alternatif (`.env` ile seçilir) |
 | **Jina Embeddings v3** | FAQ chunk embedding (API tabanlı) |
 
 ### Depolama
@@ -225,20 +228,24 @@ CarFinanceAgent/
     │
     ├── graph/
     │   ├── state.py                # ConversationState TypedDict
-    │   └── builder.py              # LangGraph graph tanımı, edge'ler
+    │   ├── workflow.py              # LangGraph StateGraph tanımı + compile
+    │   ├── nodes.py                # Node fonksiyonları (agent sarmalayıcı)
+    │   └── edges.py                # Koşullu yönlendirme (routing)
     │
     ├── agents/
     │   ├── supervisor.py           # Niyet sınıflandırma, yönlendirme
     │   ├── intake_new.py           # Yeni araç slot filling
     │   ├── intake_used.py          # 2. el slot filling
     │   ├── faq_agent.py            # RAG tabanlı SSS yanıtlama
-    │   ├── validation_agent.py     # TCKN, katalog, iş kuralı doğrulaması
+    │   ├── validation_agent.py     # Finansman/iş kuralı doğrulaması (deterministik)
+    │   ├── reflection_agent.py     # Onay öncesi self-check
     │   ├── submission_agent.py     # Başvuru kayıt
     │   └── crosssell_agent.py      # HGS çapraz satış
     │
     ├── tools/
     │   ├── tckn_tool.py            # TCKN mod-11 doğrulama
-    │   ├── catalog_tool.py         # Araç kataloğu lookup
+    │   ├── catalog_tool.py         # Araç kataloğu lookup (binek/ticari)
+    │   ├── amount_tool.py          # Finansman tutarı doğrulama/hesaplama
     │   ├── rag_tool.py             # ChromaDB retrieval
     │   ├── db_tool.py              # SQLite yazma/okuma
     │   └── hgs_tool.py             # HGS mock servisi
@@ -252,7 +259,8 @@ CarFinanceAgent/
     │   └── vector_store.py         # ChromaDB bağlantısı, indexleme, arama
     │
     ├── llm/
-    │   ├── router.py               # LLM seçimi (ACTIVE_MODEL / ROUTER_MODEL)
+    │   ├── factory.py               # LLM seçimi/üretimi (ACTIVE_MODEL / ROUTER_MODEL)
+    │   ├── json_utils.py           # LLM JSON çıktısı güvenli parse
     │   └── prompts.py              # Tüm sistem prompt şablonları
     │
     ├── observability/
@@ -300,7 +308,7 @@ Son 50 LLM çağrısı; model, latency, token sayısı, prompt ve response öniz
 ### Gereksinimler
 
 - Python 3.11+
-- OpenAI API key (GPT-4o için)
+- Google API key (varsayılan Gemini modeli için) — veya OpenAI / Anthropic key (alternatif modeller)
 - Jina AI API key (FAQ embedding için)
 
 ### Adımlar
@@ -336,14 +344,14 @@ Uygulama başladıktan sonra `http://localhost:7860` adresinde Gradio arayüzü 
 
 ```env
 # .env
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_API_KEY=AI...
-JINA_API_KEY=jina_...
+GOOGLE_API_KEY=AI...          # varsayılan Gemini için
+OPENAI_API_KEY=sk-...         # opsiyonel (GPT seçilirse)
+ANTHROPIC_API_KEY=sk-ant-...  # opsiyonel (Claude seçilirse)
+JINA_API_KEY=jina_...         # FAQ embedding için
 
 # Model seçimi
-ACTIVE_MODEL=gpt-4o           # veya: claude-opus-4-7, gemini-2.0-flash
-ROUTER_MODEL=gpt-4o-mini      # hızlı sınıflandırma modeli
+ACTIVE_MODEL=gemini/gemini-2.5-flash-lite           # veya: gpt-4o, claude-sonnet-4-6
+ROUTER_MODEL=gemini/gemini-2.5-flash-lite      # hızlı sınıflandırma modeli
 ```
 
 ### İş Kurallarını Değiştirme
