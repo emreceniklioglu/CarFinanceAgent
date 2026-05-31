@@ -75,7 +75,7 @@ Sistem, müşteriye **adım adım rehberlik** eder. LLM her cevabı üretmez; de
 - **TCKN format kontrolü** intake aşamasında regex ile yapılır: 11 hane, yalnızca rakam, sıfırla başlamaz. Mod-11 doğrulama fonksiyonu (`validate_tckn`) araç olarak kodda hazır fakat validation agent tarafından şu an çağrılmıyor.
 - Tüm TCKN'ler veritabanına yazılmadan önce **maskelenir** (`123****8901` formatı).
 - Müşteri onay ekranında her alanı **hedefli olarak değiştirebilir**; yalnızca değiştirilen alan ve ona bağımlı alanlar yeniden sorulur.
-- Başvuru tamamlandıktan sonra UUID formatında **başvuru numarası** üretilir.
+- Başvuru tamamlandıktan sonra **başvuru numarası** üretilir (uuid4'ten türetilen 8 karakterlik kısa kod, örn. `A3F9C2B1`).
 - HGS çapraz satış yalnızca **aktif HGS'i olmayan** müşterilere sunulur.
 
 ---
@@ -101,7 +101,7 @@ Müşteri Mesajı
   │           │
   └────┬──────┘
        ▼
-[Validation Agent]  ← TCKN, katalog, iş kuralı kontrolleri
+[Validation Agent]  ← finansman limit / iş kuralı kontrolleri (deterministik)
        │
        ▼
   [Output Guard]  ← PII redaction, finansal taahhüt filtresi (şu an yalnızca FAQ cevaplarında)
@@ -121,7 +121,7 @@ Müşteri herhangi bir adımda SSS sorarsa:
 ### Hedefli Güncelleme Akışı
 
 Onay ekranında müşteri alan değiştirmek istediğinde:
-1. LLM hangi alanın değiştirileceğini çıkarır
+1. Anahtar kelime eşleştirmesiyle hangi alanın değiştirileceği belirlenir (deterministik — LLM değil)
 2. Yalnızca o alan yeniden sorulur
 3. Bağımlı alanlar bozulduysa otomatik uyarı verilir
 
@@ -131,7 +131,7 @@ Onay ekranında müşteri alan değiştirmek istediğinde:
 
 | Agent | Sorumluluk | Agentic Desen |
 |---|---|---|
-| **Supervisor Agent** | Niyet sınıflandırma, yönlendirme, planlama | Planner + Router |
+| **Supervisor Agent** | Niyet sınıflandırma, yönlendirme | Supervisor / Router |
 | **Intake Agent (Yeni Araç)** | Fatura, model, finansman, kefil TCKN toplanması; araç kataloğu sorgusu (binek/ticari doğrulama) | Slot Filling + Tool Use |
 | **Intake Agent (2. El)** | Kasko, yaş, finansman, satıcı TCKN toplanması | Slot Filling + Tool Use |
 | **Validation Agent** | Finansman limit kontrolü, iş kuralı kontrolleri | Tool Use (deterministik) |
@@ -187,7 +187,7 @@ Tüm guard ve tool olayları **SQLite Audit Log**'a yazılır (`audit_events` ta
 | **LangChain** | Tool dekoratörü (`@tool`), mesaj formatları (Human/AI Message) |
 | **LiteLLM** | LLM soyutlama katmanı — GPT/Claude/Gemini'yi tek arayüzle çağırır (`llm/factory.py`) |
 | **Gradio** | Chatbot web arayüzü |
-| **OpenTelemetry** | Tracing altyapısı kurulu (`observability/tracer.py`), şu an ConsoleSpanExporter ile terminale yazıyor; Jaeger/Grafana bağlantısı yok |
+| **OpenTelemetry** | Tracing iskeleti kodda mevcut (`observability/tracer.py`, ConsoleSpanExporter) fakat **şu an hiçbir node/agent tarafından çağrılmıyor** — aktif span üretilmiyor. Gerçek izleme SQLite audit log ile yapılıyor |
 
 ### Yapay Zeka / LLM
 

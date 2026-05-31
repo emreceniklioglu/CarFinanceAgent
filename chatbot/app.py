@@ -1,5 +1,5 @@
 """
-app.py — Ana Uygulama Girişi (Gradio + FastAPI)
+app.py — Ana Uygulama Girişi (Gradio)
 
 Gradio ChatInterface ile sohbet arayüzü sunar.
 Üst kısımda model seçici dropdown ile GPT/Claude/Gemini arası geçiş.
@@ -231,7 +231,7 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
 | **State Machine** | `graph/workflow.py` | LangGraph StateGraph — tüm akış |
 | **Supervisor** | `agents/supervisor.py` | Intent sınıflandırma + dal yönlendirme |
 | **Tool Use** | `tools/` | @tool ile iş kuralları kapsülleme |
-| **ReAct** | `agents/validation_agent.py` | Reason + Act döngüsü |
+| **Deterministik Doğrulama** | `agents/validation_agent.py` | İş kuralı kontrolü — LLM'siz, sabit akış |
 | **RAG** | `agents/faq_agent.py` | Jina embed + ChromaDB retrieval |
 | **Reflection** | `agents/reflection_agent.py` | Self-check onay öncesi |
 | **Short-Term Memory** | `memory/checkpointer.py` | LangGraph MemorySaver |
@@ -239,7 +239,6 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
 | **Least-Privilege** | `agents/crosssell_agent.py` | Scoped tool access |
 | **Input/Output Guard** | `guardrails/` | PII + injection filter |
 | **Audit Log** | `observability/audit_logger.py` | KVKK/BDDK uyumlu log |
-| **Streaming** | `app.py` | Gradio token streaming |
 """)
 
 

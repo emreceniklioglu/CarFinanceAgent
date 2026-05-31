@@ -1,9 +1,10 @@
 """
-agents/validation_agent.py — Doğrulama Agent'ı (ReAct Pattern)
+agents/validation_agent.py — Doğrulama Agent'ı (Deterministik Tool Use)
 
-AGENTIC PATTERN: ReAct (Reason + Act)
+AGENTIC PATTERN: Tool Use (Deterministik — LLM yok)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ReAct pattern: Düşün → Araç Çağır → Gözlemle → Tekrar Düşün...
+Bu agent LLM ÇAĞIRMAZ; iş kuralı tool'larını kod ile sabit sırayla çağırır.
+LLM güdümlü reason→act→observe (ReAct) döngüsü YOKTUR — akış deterministiktir.
 
 Bu agent:
 1. Mevcut state'deki slot değerlerini alır
@@ -11,21 +12,15 @@ Bu agent:
 3. Hata bulursa müşteriye açıklayıcı mesaj gönderir
 4. Tüm kurallar geçerse bir sonraki adıma onay verir
 
-NEDEN ReAct?
-- Validation birden fazla araç çağrısı gerektirebilir
-  (önce fatura kontrolü, sonra oran kontrolü, sonra kefil)
-- Her araç sonucuna göre bir sonraki adımı dinamik seçer
+NEDEN deterministik?
 - İş kuralları LLM'de değil, tool'larda → halüsinasyon riski 0
+- Bankacılık doğrulaması denetlenebilir ve tekrarlanabilir olmalı
+- Hangi kontrolün ne zaman yapılacağı koda gömülü, LLM'e bırakılmaz
 
-Araç erişimi: validate_new_car_amount, validate_used_car_amount,
-              validate_tckn, lookup_vehicle, calculate_max_finance_*
+Araç erişimi: validate_new_car_amount, validate_used_car_amount
 """
-import time
 from langchain_core.messages import AIMessage
-from llm.factory import get_router_llm
-from tools.tckn_tool import validate_tckn
-from tools.catalog_tool import lookup_vehicle
-from tools.amount_tool import validate_new_car_amount, validate_used_car_amount, calculate_max_finance_new, calculate_max_finance_used
+from tools.amount_tool import validate_new_car_amount, validate_used_car_amount
 from graph.state import ConversationState
 from observability.audit_logger import log_tool_call
 
